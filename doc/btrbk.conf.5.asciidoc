@@ -398,12 +398,21 @@ If you want to set this option for regular (non-root) user only, set
 *backend_local_user*.
 --
 
-*compat* busybox|no::
-    If set to ``busybox'', use busybox compatible commands. Defaults
-    to ``no''.
-    If you want to set this option for local or remote hosts only, you
-    can set *compat_local* or *compat_remote*
-    (e.g. "compat_remote busybox").
+*compat* <compat-option>::
+    Enable a compatibility option. Available 'compat-option':
++
+--
+*busybox*::
+    Use busybox compatible commands.
+
+*missing_otime*::
+    Ignore BTRFS_SEND_A_OTIME errors on btrfs receive. Useful for
+    synology devices complaining about "ERROR: attribute 12 requested
+    but not present".
+
+If you want to set this option for local or remote hosts only, set
+*compat_local* or *compat_remote* (e.g. "compat_remote busybox").
+--
 
 *cache_dir* <directory>::
     If set, cache extent maps for the "btrbk extents" command.
