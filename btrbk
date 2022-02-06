@@ -141,9 +141,9 @@ my %config_options = (
   backend_remote              => { default => undef,         accept => [ "no", "btrfs-progs", "btrfs-progs-btrbk", "btrfs-progs-sudo" ] },
   backend_local_user          => { default => undef,         accept => [ "no", "btrfs-progs", "btrfs-progs-btrbk", "btrfs-progs-sudo" ] },
 
-  compat                      => { default => undef,     accept => [ "busybox", "missing_otime" ], allow_multiple => 1 },
-  compat_local                => { default => undef,     accept => [ "busybox", "missing_otime" ], allow_multiple => 1 },
-  compat_remote               => { default => undef,     accept => [ "busybox", "missing_otime" ], allow_multiple => 1 },
+  compat                      => { default => undef,     accept => [ "busybox", "missing_otime", "ignore_receive_errors" ], allow_multiple => 1 },
+  compat_local                => { default => undef,     accept => [ "busybox", "missing_otime", "ignore_receive_errors" ], allow_multiple => 1 },
+  compat_remote               => { default => undef,     accept => [ "busybox", "missing_otime", "ignore_receive_errors" ], allow_multiple => 1 },
   safe_commands               => { default => undef,     accept => [ "yes", "no" ], context => [ "global" ] },
 
   snapshot_qgroup_destroy     => { default => undef,     accept => [ "yes", "no" ], context => [ "global", "volume", "subvolume" ] },
@@ -1572,6 +1572,7 @@ sub btrfs_send_receive($$;$$$)
 
   my $stream_options = config_stream_hash($snapshot, $target);
   my $compat_otime = config_key_lru($target, "compat", "missing_otime");
+  my $compat_ignore_err = config_key_lru($target, "compat", "ignore_receive_errors");
 
   my @send_options;
   my @receive_options;
@@ -1579,6 +1580,7 @@ sub btrfs_send_receive($$;$$$)
   push(@send_options, '-c', { unsafe => $_ } ) foreach(map { $_->{PATH} } @$clone_src);
   # push(@send_options, '-v') if($loglevel >= 3);
   # push(@receive_options, '-v') if($loglevel >= 3);
+  push(@receive_options, '--max-errors=0') if($compat_otime || $compat_ignore_err);
 
   my @cmd_pipe;
   push @cmd_pipe, {
@@ -1594,7 +1596,10 @@ sub btrfs_send_receive($$;$$$)
     fatal_stderr => sub {
       # NOTE: btrfs-progs < 4.11: if "btrfs send" fails, "btrfs receive" returns 0!
       if($compat_otime && s/^ERROR: (attribute 12 requested but not present.*)//) {
-        INFO "Ignoring btrfs receive error (compat=missing_otime): $1";
+        WARN "Ignoring btrfs receive error (compat=missing_otime): $1";
+      }
+      if($compat_ignore_err && s/^ERROR: (.*)//) {
+        WARN "Ignoring btrfs receive error (compat=ignore_receive_errors): $1";
       }
       m/^ERROR: /;
     },
