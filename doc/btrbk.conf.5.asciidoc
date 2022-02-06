@@ -410,6 +410,18 @@ If you want to set this option for regular (non-root) user only, set
     synology devices complaining about "ERROR: attribute 12 requested
     but not present".
 
+*ignore_receive_errors*  _*experimental*_::
+    Tell btrfs-receive(8) to not terminate on errors by setting
+    "--max-errors=0" option. Print warnings instead.
++
+A known use case for this are target hosts lacking xattr support
+(e.g. some Synology NAS), while the send-stream contains "lsetxattr"
+commands. Another case is targets failing to set otime, complaining
+with "ERROR: attribute 12 requested but not present".
++
+Note that there is *no guarantee that backups created with this
+option enabled can be restored at all*.
+
 If you want to set this option for local or remote hosts only, set
 *compat_local* or *compat_remote* (e.g. "compat_remote busybox").
 --
